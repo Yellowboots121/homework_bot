@@ -6,12 +6,16 @@ certifi==2022.9.24
 charset-normalizer==2.1.1
 colorama==0.4.6
 exceptiongroup==1.0.0
+flake8==5.0.4
 idna==3.4
-importlib-metadata==5.0.0
+importlib-metadata==4.13.0
 iniconfig==1.1.1
+mccabe==0.7.0
 packaging==21.3
 pluggy==1.0.0
 pyaes==1.6.1
+pycodestyle==2.9.1
+pyflakes==2.5.0
 pyparsing==3.0.9
 Pyrogram==2.0.59
 PySocks==1.7.1
