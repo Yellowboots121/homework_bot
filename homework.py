@@ -6,20 +6,19 @@ import requests
 import telegram
 from dotenv import load_dotenv
 from logging import StreamHandler
-from telegram.ext import Updater
 
 load_dotenv()
 
 logging.basicConfig(
-        format='%(asctime)s, %(levelname)s, %(name)s, %(message)s',
-        filemode='w',
-        filename='logfile.log',
-        level=logging.INFO,
-    )
+    format='%(asctime)s, %(levelname)s, %(name)s, %(message)s',
+    filemode='w',
+    filename='logfile.log',
+    level=logging.INFO,
+)
 logger = logging.getLogger(__name__)
 formatter = logging.Formatter(
     '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    )
+)
 fileHandler = logging.FileHandler("logfile.log")
 streamHandler = StreamHandler(stream=sys.stdout)
 streamHandler.setFormatter(formatter)
@@ -54,11 +53,12 @@ class DataTypeError(Exception):
 
     pass
 
+
 def send_message(bot, message):
     """Отправляет сообщение пользователю в Телегу."""
     return bot.send_message(
         chat_id=TELEGRAM_CHAT_ID, text=message
-        )
+    )
 
 
 def get_api_answer(current_timestamp):
@@ -75,12 +75,11 @@ def get_api_answer(current_timestamp):
 
     response_status = response.status_code
     if response_status != 200:
-        raise logging.error(f'Ошибка статуса страницы: {error}')
+        raise logging.error('Ошибка статуса страницы')
     try:
         return response.json()
     except Exception as error:
         raise logging.error(f'Формат не json: {error}')
-    
 
 
 def check_response(response):
@@ -123,12 +122,10 @@ def main():
     """Основная логика работы бота."""
 
     if not check_tokens():
-        raise logging.error(f'Ошибка переменной. Смотрите логи: {error}')
+        raise logging.error('Ошибка переменной. Смотрите логи.')
 
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
     current_timestamp = int(time.time())
-
-    ...
 
     while True:
         try:
