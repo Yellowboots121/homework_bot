@@ -83,7 +83,7 @@ def get_api_answer(current_timestamp):
 
 
 def check_response(response):
-    """Проверяет ответ API на корректность. """
+    """Проверяет ответ API на корректность."""
     if response['homeworks']:
         return response['homeworks'][0]
     else:
@@ -91,7 +91,7 @@ def check_response(response):
 
 
 def parse_status(homework):
-    """Извлекает из информации о конкретной"""
+    """Извлекает из информации о конкретной."""
     """домашней работе статус этой работы."""
     if not isinstance(homework, dict):
         raise DataTypeError(WRONG_DATA_TYPE.format(type(homework)))
@@ -107,7 +107,7 @@ def parse_status(homework):
 
 
 def check_tokens():
-    """"Проверяет доступность переменных окружения"""
+    """Проверяет доступность переменных окружения."""
     for key in (PRACTICUM_TOKEN, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID, ENDPOINT):
         if key is None:
             logging.error(GLOBAL_VARIABLE_IS_MISSING)
@@ -120,7 +120,6 @@ def check_tokens():
 
 def main():
     """Основная логика работы бота."""
-
     if not check_tokens():
         raise logging.error('Ошибка переменной. Смотрите логи.')
 
