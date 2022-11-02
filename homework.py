@@ -6,6 +6,7 @@ import requests
 import telegram
 from dotenv import load_dotenv
 from logging import StreamHandler
+from http import HTTPStatus
 
 load_dotenv()
 
@@ -30,8 +31,6 @@ logger.addHandler(fileHandler)
 PRACTICUM_TOKEN = os.getenv('PRACTICUM_TOKEN')
 TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
 TELEGRAM_CHAT_ID = os.getenv('CHAT_ID')
-GLOBAL_VARIABLE_IS_MISSING = 'Отсутствует глобальная переменная'
-GLOBAL_VARIABLE_IS_EMPTY = 'Пустая глобальная переменная'
 LIST_IS_EMPTY = 'Список пустой'
 WRONG_HOMEWORK_STATUS = '{homework_status}'
 WRONG_DATA_TYPE = 'Неверный тип данных {type}, вместо "dict"'
@@ -40,6 +39,7 @@ RETRY_TIME = 600
 ENDPOINT = 'https://practicum.yandex.ru/api/user_api/homework_statuses/'
 HEADERS = {'Authorization': f'OAuth {PRACTICUM_TOKEN}'}
 
+all = (PRACTICUM_TOKEN, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID, ENDPOINT)
 
 HOMEWORK_STATUSES = {
     'approved': 'Работа проверена: ревьюеру всё понравилось. Ура!',
@@ -54,27 +54,57 @@ class DataTypeError(Exception):
     pass
 
 
+class MessageSendingError(Exception):
+    """Ошибка отправки сообщения."""
+
+    pass
+
+
+class FailedRequestError(Exception):
+    """Ошибка запроса API"""
+
+    pass
+
+
+class EmptyError(Exception):
+    """Ответ API пуст"""
+
+    pass
+
+
+class NoKeyError(Exception):
+    """Отсутствует ключ"""
+
+    pass
+
+
+class WrongDataTypeError(Exception):
+    """Ошибка, если тип данных не list."""
+
+    pass
+
+
 def send_message(bot, message):
     """Отправляет сообщение пользователю в Телегу."""
-    return bot.send_message(
-        chat_id=TELEGRAM_CHAT_ID, text=message
-    )
+    try:
+        bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=message)
+    except Exception as error:
+        raise MessageSendingError('Ошибка при отправке сообщеия') from error
 
 
 def get_api_answer(current_timestamp):
     """Делает запрос к единственному эндпоинту API-сервиса."""
-    timestamp = current_timestamp or int(time.time(0))
+    timestamp = current_timestamp
     params = {'from_date': timestamp}
-    all_params = dict(url=ENDPOINT, headers=HEADERS, params=params)
     try:
-        response = requests.get(**all_params)
+        response = requests.get(
+            **dict(url=ENDPOINT, headers=HEADERS, params=params))
     except Exception as error:
-        logging.error(f'Ошибка при запросе к основному API: {error}')
-        new_url = 'https://api.thedogapi.com/v1/images/search'
-        response = requests.get(new_url)
+        raise FailedRequestError(
+            'Ошибка при запросе к основному API') from error
 
     response_status = response.status_code
-    if response_status != 200:
+    if response_status != HTTPStatus.OK:
         raise logging.error('Ошибка статуса страницы')
     try:
         return response.json()
@@ -84,17 +114,33 @@ def get_api_answer(current_timestamp):
 
 def check_response(response):
     """Проверяет ответ API на корректность."""
-    if response['homeworks']:
-        return response['homeworks'][0]
-    else:
-        raise IndexError(LIST_IS_EMPTY)
+    if type(response) is not dict:
+        logging.error('Тип данных ответа от API адреса не dict.')
+        raise TypeError('Тип данных ответа от API адреса не dict.')
+    try:
+        homeworks_list = response['homeworks']
+    except KeyError:
+        logging.error('В ответе API отсутствует ожидаемый ключ "homeworks".')
+        raise KeyError('В ответе API отсутствует ожидаемый ключ "homeworks".')
+    try:
+        homework = homeworks_list[0]
+    except IndexError:
+        logging.error('Список работ на проверке пуст.')
+        raise IndexError('Список работ на проверке пуст.')
+    return homework
 
 
 def parse_status(homework):
     """Извлекает из информации о конкретной."""
     """домашней работе статус этой работы."""
-    if not isinstance(homework, dict):
-        raise DataTypeError(WRONG_DATA_TYPE.format(type(homework)))
+    if 'homework_name' not in homework:
+        message = 'Ключ homework_name недоступен'
+        logging.error(message)
+        raise KeyError(message)
+    if 'status' not in homework:
+        message = 'Ключ status недоступен'
+        logging.error(message)
+        raise KeyError(message)
     homework_name = homework.get('homework_name')
     homework_status = homework.get('status')
 
@@ -110,10 +156,10 @@ def check_tokens():
     """Проверяет доступность переменных окружения."""
     for key in (PRACTICUM_TOKEN, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID, ENDPOINT):
         if key is None:
-            logging.error(GLOBAL_VARIABLE_IS_MISSING)
+            logging.error('Глобальная переменная отсутсвует')
             return False
         if not key:
-            logging.error(GLOBAL_VARIABLE_IS_EMPTY)
+            logging.error('Глобальная переменная пучта')
             return False
     return True
 
@@ -132,22 +178,14 @@ def main():
             homework = check_response(response)
             message = parse_status(homework)
             send_message(bot, message)
-            logging.info(homework)
+            logging.info(f'Сообщение {message} отправлено'.format(message))
             current_timestamp = response.get('current_date')
-            time.sleep(RETRY_TIME)
-        except KeyboardInterrupt:
-            message = 'Прерывание клавиатуры'
-            logging.info(message)
         except Exception as error:
             message = f'Сбой в работе программы: {error}'
             send_message(bot, message)
-            time.sleep(RETRY_TIME)
-        else:
-            message = 'Бот работает'
-            logging.info(message)
+            logging.error(message)
         finally:
             time.sleep(RETRY_TIME)
-        logging.info(f'Сообщение {message} отправлено'.format(message))
 
 
 if __name__ == '__main__':
