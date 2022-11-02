@@ -61,25 +61,19 @@ class MessageSendingError(Exception):
 
 
 class FailedRequestError(Exception):
-    """Ошибка запроса API"""
+    """Ошибка запроса API."""
 
     pass
 
 
 class EmptyError(Exception):
-    """Ответ API пуст"""
+    """Ответ API пуст."""
 
     pass
 
 
 class NoKeyError(Exception):
-    """Отсутствует ключ"""
-
-    pass
-
-
-class WrongDataTypeError(Exception):
-    """Ошибка, если тип данных не list."""
+    """Отсутствует ключ."""
 
     pass
 
